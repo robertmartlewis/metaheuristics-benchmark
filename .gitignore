@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Jetbrains
+.idea/
+
+# DS
+.DS_Store
+Thumbs.db
