@@ -1,21 +1,15 @@
-class Problem:
+from abc import ABC, abstractmethod
 
-    def __init__(self, dimension, lower_bound, upper_bound):
-        self.dimension = dimension
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+class Problem(ABC):
 
+    @abstractmethod
     def validate(self, candidate):
-        if len(candidate) != self.dimension: return False
+        pass
 
-        for x in candidate:
-            if not (self.lower_bound <= x <= self.upper_bound):
-                return False
-
-        return True
-
+    @abstractmethod
     def evaluate(self, candidate):
         pass
 
+    @abstractmethod
     def random_solution(self, rng):
         pass
