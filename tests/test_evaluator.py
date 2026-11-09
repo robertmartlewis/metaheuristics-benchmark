@@ -74,3 +74,37 @@ def test_evaluator_rejects_nan_fitness():
 
     assert evaluator.evaluations == 1
     assert evaluator.best_fitness == float("inf")
+
+def test_evaluator_records_convergence_history():
+    evaluator = Evaluator(DummyProblem(), max_evaluations=200)
+
+    assert evaluator.best_history == []
+
+    for _ in range(100):
+        evaluator.evaluate([3.0])
+
+    for _ in range(100):
+        evaluator.evaluate([2.0])
+
+    assert len(evaluator.best_history) == 200
+    assert evaluator.best_history[99] == 9.0
+    assert evaluator.best_history[199] == 4.0
+
+def test_evaluator_records_final_checkpoint():
+    evaluator = Evaluator(DummyProblem(), max_evaluations=250)
+
+    assert evaluator.best_history == []
+
+    for _ in range(100):
+        evaluator.evaluate([3.0])
+
+    for _ in range(100):
+        evaluator.evaluate([2.0])
+
+    for _ in range(50):
+        evaluator.evaluate([1.0])
+
+    assert len(evaluator.best_history) == 250
+    assert evaluator.best_history[99] == 9.0
+    assert evaluator.best_history[199] == 4.0
+    assert evaluator.best_history[249] == 1.0
