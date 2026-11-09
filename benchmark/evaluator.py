@@ -1,3 +1,5 @@
+import math
+
 class Evaluator:
     def __init__(self, problem, max_evaluations):
         if not type(max_evaluations) is int:
@@ -7,10 +9,15 @@ class Evaluator:
         self.problem = problem
         self.max_evaluations = max_evaluations
         self.evaluations = 0
+        self.best_fitness = float("inf")
 
     def evaluate(self, candidate):
         if self.evaluations < self.max_evaluations:
             result = self.problem.evaluate(candidate)
             self.evaluations += 1
+            if not math.isfinite(result):
+                raise ValueError("Fitness must be finite")
+            if result < self.best_fitness:
+                self.best_fitness = result
             return result
         raise RuntimeError("Evaluation budget exhausted")

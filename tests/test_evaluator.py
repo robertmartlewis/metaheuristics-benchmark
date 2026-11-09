@@ -48,3 +48,29 @@ def test_evaluator_rejects_invalid_budget_type():
         Evaluator(DummyProblem(), max_evaluations=True)
     with pytest.raises(TypeError):
         Evaluator(DummyProblem(), max_evaluations="100")
+
+def test_evaluator_tracks_best_fitness():
+    evaluator = Evaluator(DummyProblem(), max_evaluations=4)
+
+    assert evaluator.best_fitness == float("inf")
+
+    evaluator.evaluate([3.0])
+    assert evaluator.best_fitness == 9.0
+
+    evaluator.evaluate([2.0])
+    assert evaluator.best_fitness == 4.0
+
+    evaluator.evaluate([4.0])
+    assert evaluator.best_fitness == 4.0
+
+    evaluator.evaluate([1.0])
+    assert evaluator.best_fitness == 1.0
+
+def test_evaluator_rejects_nan_fitness():
+    evaluator = Evaluator(DummyProblem(), max_evaluations=4)
+
+    with pytest.raises(ValueError):
+        evaluator.evaluate([float("nan")])
+
+    assert evaluator.evaluations == 1
+    assert evaluator.best_fitness == float("inf")
