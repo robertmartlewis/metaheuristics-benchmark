@@ -40,3 +40,11 @@ def test_evaluator_rejects_invalid_budget():
         Evaluator(DummyProblem(), max_evaluations=0)
     with pytest.raises(ValueError):
         Evaluator(DummyProblem(), max_evaluations=-10)
+
+def test_evaluator_rejects_invalid_budget_type():
+    with pytest.raises(TypeError):
+        Evaluator(DummyProblem(), max_evaluations=3.5)
+    with pytest.raises(TypeError):
+        Evaluator(DummyProblem(), max_evaluations=True)
+    with pytest.raises(TypeError):
+        Evaluator(DummyProblem(), max_evaluations="100")

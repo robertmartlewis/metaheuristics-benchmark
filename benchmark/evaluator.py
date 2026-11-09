@@ -1,5 +1,7 @@
 class Evaluator:
     def __init__(self, problem, max_evaluations):
+        if not type(max_evaluations) is int:
+            raise TypeError("max_evaluations must be an integer")
         if max_evaluations <= 0:
             raise ValueError("Evaluation budget must be positive")
         self.problem = problem
