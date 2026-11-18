@@ -5,7 +5,8 @@ import pytest
 from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.sphere import Sphere
-from benchmark.tsp import TSP
+from benchmark.tsp import TSP, create_tsp_instance
+from unittest.mock import Mock
 
 
 def test_ga_runs_on_sphere():
@@ -111,3 +112,31 @@ def test_ga_swap_mutation_preserves_permutation():
     assert np.array_equal(np.sort(candidate), np.sort(original))
     assert np.array_equal(candidate, original)
     assert np.count_nonzero(mutated != original) == 2
+
+def test_ga_runs_on_tsp():
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=60)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == 60
+    assert len(result.best_history) == 60
+    assert np.isfinite(result.best_fitness)
+    assert result.best_fitness > 0
+
+
+def test_ga_order_crossover_expected_child():
+    parent_a = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    parent_b = np.array([4, 6, 1, 7, 3, 0, 5, 2])
+
+    rng = Mock()
+    rng.choice.return_value = np.array([2, 5])
+
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    child = algorithm._order_crossover(parent_a, parent_b, rng)
+
+    expected = np.array([7, 0, 2, 3, 4, 5, 6, 1])
+
+    assert np.array_equal(child, expected)

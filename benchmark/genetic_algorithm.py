@@ -1,5 +1,6 @@
 import numpy as np
 
+from benchmark.tsp import TSP
 
 class GeneticAlgorithm:
     def __init__(self, population_size):
@@ -31,11 +32,18 @@ class GeneticAlgorithm:
                 parent_b = population[index_2]
 
                 if rng.random() < 0.9:
-                    child = self._arithmetic_crossover(parent_a, parent_b, rng)
+                    if isinstance(problem, TSP):
+                        child = self._order_crossover(parent_a, parent_b, rng)
+                    else:
+                        child = self._arithmetic_crossover(parent_a, parent_b, rng)
                 else:
                     child = parent_a.copy()
 
-                mutated = self._gaussian_mutation(child, problem, rng)
+                if isinstance(problem, TSP):
+                    mutated = self._swap_mutation(child, rng)
+                else:
+                    mutated = self._gaussian_mutation(child, problem, rng)
+
                 fitness = evaluator.evaluate(mutated)
 
                 new_population.append(mutated)
