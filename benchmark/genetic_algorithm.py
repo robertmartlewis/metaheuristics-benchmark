@@ -65,3 +65,27 @@ class GeneticAlgorithm:
         mutated_candidate = candidate + noise
         return np.clip(mutated_candidate, problem.lower_bound, problem.upper_bound)
 
+    def _order_crossover(self, parent_a, parent_b, rng):
+        cuts = rng.choice(len(parent_a), size=2, replace=False)
+        left, right = sorted(cuts)
+
+        child = np.full(len(parent_a), -1, dtype=int)
+        child[left:right + 1] = parent_a[left:right + 1]
+
+        write_index = (right + 1) % len(parent_a)
+
+        for i in range(len(parent_a)):
+            index = (right + 1 + i) % len(parent_a)
+            city = parent_b[index]
+
+            if city not in child:
+                child[write_index] = city
+                write_index = (write_index + 1) % len(parent_a)
+
+        return child
+
+    def _swap_mutation(self, candidate, rng):
+        swapped = candidate.copy()
+        a, b = rng.choice(len(candidate), size=2, replace=False)
+        swapped[a], swapped[b] = swapped[b], swapped[a]
+        return swapped

@@ -5,6 +5,7 @@ import pytest
 from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.sphere import Sphere
+from benchmark.tsp import TSP
 
 
 def test_ga_runs_on_sphere():
@@ -73,3 +74,40 @@ def test_ga_rejects_budget_smaller_than_population():
 
     with pytest.raises(ValueError):
         runner.run(algorithm, problem, seed=202700)
+
+def test_ga_order_crossover_preserves_permutation():
+    cities = np.array([
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [2.0, 0.0],
+        [3.0, 0.0],
+        [4.0, 0.0],
+        [5.0, 0.0],
+        [6.0, 0.0],
+        [7.0, 0.0]
+    ])
+
+    problem = TSP(cities)
+
+    parent_a = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    parent_b = np.array([4, 6, 1, 7, 3, 0, 5, 2])
+
+    rng = np.random.default_rng(202700)
+
+    algorithm = GeneticAlgorithm(population_size=20)
+    child = algorithm._order_crossover(parent_a, parent_b, rng)
+
+    assert problem.validate(child)
+    assert len(child) == 8
+    assert np.array_equal(parent_a, np.array([0, 1, 2, 3, 4, 5, 6, 7]))
+    assert np.array_equal(parent_b, np.array([4, 6, 1, 7, 3, 0, 5, 2]))
+
+def test_ga_swap_mutation_preserves_permutation():
+    candidate = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    original = candidate.copy()
+    rng = np.random.default_rng(202700)
+    algorithm = GeneticAlgorithm(population_size=20)
+    mutated = algorithm._swap_mutation(candidate, rng)
+    assert np.array_equal(np.sort(candidate), np.sort(original))
+    assert np.array_equal(candidate, original)
+    assert np.count_nonzero(mutated != original) == 2
