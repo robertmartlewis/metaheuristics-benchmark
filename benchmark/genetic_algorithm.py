@@ -67,14 +67,11 @@ class GeneticAlgorithm:
 
     def _gaussian_mutation(self, candidate, problem, rng):
         sigma = 0.1 * (problem.upper_bound - problem.lower_bound)
-
-        noise = rng.normal(
-            loc=0.0,
-            scale=sigma,
-            size=len(candidate)
-        )
-
-        mutated_candidate = candidate + noise
+        noise = rng.normal(loc=0.0, scale=sigma, size=len(candidate))
+        mutation_probability = 1.0 / len(candidate)
+        mask = rng.random(size=len(candidate)) < mutation_probability
+        masked_noise = noise * mask
+        mutated_candidate = candidate + masked_noise
         return np.clip(mutated_candidate, problem.lower_bound, problem.upper_bound)
 
     def _order_crossover(self, parent_a, parent_b, rng):

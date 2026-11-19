@@ -175,3 +175,37 @@ def test_ga_tsp_is_reproducible():
 def test_ga_rejects_invalid_population_size(population_size, exception):
     with pytest.raises(exception):
         GeneticAlgorithm(population_size=population_size)
+
+def test_ga_gaussian_mutation_respects_mask():
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    candidate = np.array([0.0, 0.0, 0.0, 0.0])
+    original = candidate.copy()
+
+    rng = Mock()
+    rng.normal.return_value = np.array([1.0, 2.0, 3.0, 4.0])
+    rng.random.return_value = np.array([0.9, 0.1, 0.8, 0.2])
+
+    mutated = algorithm._gaussian_mutation(candidate, problem, rng)
+
+    expected = np.array([0.0, 2.0, 0.0, 4.0])
+
+    assert np.array_equal(mutated, expected)
+    assert np.array_equal(original, candidate)
+
+def test_ga_gaussian_mutation_can_leave_candidate_unchanged():
+    problem = Sphere(4, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    candidate = np.array([1.0, 2.0, 3.0, 4.0])
+    original = candidate.copy()
+
+    rng = Mock()
+    rng.normal.return_value = np.array([0.5, 0.5, 1.0, -1.0])
+    rng.random.return_value = np.array([0.9, 0.8, 0.7, 0.6])
+
+    mutated = algorithm._gaussian_mutation(candidate, problem, rng)
+
+    assert np.array_equal(mutated, candidate)
+    assert np.array_equal(original, candidate)
