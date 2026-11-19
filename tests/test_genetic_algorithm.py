@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import pytest
+from scipy._external.cobyqa import problem
 
 from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
@@ -209,3 +210,34 @@ def test_ga_gaussian_mutation_can_leave_candidate_unchanged():
 
     assert np.array_equal(mutated, candidate)
     assert np.array_equal(original, candidate)
+
+@pytest.mark.parametrize("budget", [20,21,40])
+def test_ga_handles_partial_generations(budget):
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=budget)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == budget
+    assert len(result.best_history) == budget
+    assert np.isfinite(result.best_fitness)
+
+@pytest.mark.parametrize("budget", [20,21,40])
+def test_ga_tsp_handles_partial_generations(budget):
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=budget)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == budget
+    assert len(result.best_history) == budget
+    assert np.isfinite(result.best_fitness)
+
+def test_ga_rejects_unsupported_problem():
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+
+    with pytest.raises(TypeError):
+        runner.run(algorithm, problem, seed=202700)

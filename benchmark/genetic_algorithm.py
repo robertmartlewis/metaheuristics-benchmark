@@ -1,6 +1,7 @@
 import numpy as np
 
 from benchmark.tsp import TSP
+from benchmark.continuous_problem import ContinuousProblem
 
 class GeneticAlgorithm:
     def __init__(self, population_size):
@@ -13,6 +14,8 @@ class GeneticAlgorithm:
     def run(self, problem, evaluator, rng):
         if evaluator.max_evaluations < self.population_size:
             raise ValueError("Evaluation budget is smaller than population size")
+        if not isinstance(problem, (TSP, ContinuousProblem)):
+            raise TypeError("problem must be an instance of TSP or ContinuousProblem")
 
         population = []
         fitness_values = []
