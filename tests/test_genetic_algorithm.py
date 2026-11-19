@@ -1,0 +1,243 @@
+import math
+import numpy as np
+import pytest
+from scipy._external.cobyqa import problem
+
+from benchmark.genetic_algorithm import GeneticAlgorithm
+from benchmark.experiment_runner import ExperimentRunner
+from benchmark.sphere import Sphere
+from benchmark.tsp import TSP, create_tsp_instance
+from unittest.mock import Mock
+
+
+def test_ga_runs_on_sphere():
+    problem = Sphere(10, -5.12, 5.12)
+    runner = ExperimentRunner(max_evaluations=60)
+
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    result = runner.run(
+        algorithm,
+        problem,
+        seed=202700
+    )
+
+    assert result.evaluations == 60
+    assert len(result.best_history) == 60
+    assert math.isfinite(result.best_fitness)
+    assert result.best_fitness >= 0.0
+
+def test_ga_tournament_selects_lowest_fitness():
+    algorithm = GeneticAlgorithm(population_size=3)
+    rng = np.random.default_rng(202700)
+
+    fitness_values = [14.0, 6.0, 11.0]
+
+    winner = algorithm._tournament_select(fitness_values, rng)
+
+    assert winner == 1
+
+def test_ga_arithmetic_crossover():
+    algorithm = GeneticAlgorithm(population_size=20)
+    rng = np.random.default_rng(202700)
+
+    parent_a = np.array([8.0, 2.0])
+    parent_b = np.array([4.0, 6.0])
+
+    child = algorithm._arithmetic_crossover(parent_a, parent_b, rng)
+
+    assert len(child) == 2
+    assert np.all(child >= np.minimum(parent_a, parent_b))
+    assert np.all(child <= np.maximum(parent_a, parent_b))
+    assert np.array_equal(parent_a, np.array([8.0, 2.0]))
+    assert np.array_equal(parent_b, np.array([4.0, 6.0]))
+
+def test_ga_gaussian_mutation():
+    algorithm = GeneticAlgorithm(population_size=20)
+    problem = Sphere(3, -5.12, 5.12)
+    rng = np.random.default_rng(202700)
+
+    candidate = np.array([5.12, 0.0, -5.12])
+
+    mutated = algorithm._gaussian_mutation(candidate, problem, rng)
+
+    assert len(mutated) == 3
+    assert np.all(mutated >= problem.lower_bound)
+    assert np.all(mutated <= problem.upper_bound)
+    assert problem.validate(mutated)
+    assert np.array_equal(candidate, np.array([5.12, 0.0, -5.12]))
+    assert isinstance(mutated, np.ndarray)
+    assert not np.array_equal(mutated, candidate)
+
+def test_ga_rejects_budget_smaller_than_population():
+    algorithm = GeneticAlgorithm(population_size=20)
+    problem = Sphere(10, -5.12, 5.12)
+    runner = ExperimentRunner(max_evaluations=10)
+
+    with pytest.raises(ValueError):
+        runner.run(algorithm, problem, seed=202700)
+
+def test_ga_order_crossover_preserves_permutation():
+    cities = np.array([
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [2.0, 0.0],
+        [3.0, 0.0],
+        [4.0, 0.0],
+        [5.0, 0.0],
+        [6.0, 0.0],
+        [7.0, 0.0]
+    ])
+
+    problem = TSP(cities)
+
+    parent_a = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    parent_b = np.array([4, 6, 1, 7, 3, 0, 5, 2])
+
+    rng = np.random.default_rng(202700)
+
+    algorithm = GeneticAlgorithm(population_size=20)
+    child = algorithm._order_crossover(parent_a, parent_b, rng)
+
+    assert problem.validate(child)
+    assert len(child) == 8
+    assert np.array_equal(parent_a, np.array([0, 1, 2, 3, 4, 5, 6, 7]))
+    assert np.array_equal(parent_b, np.array([4, 6, 1, 7, 3, 0, 5, 2]))
+
+def test_ga_swap_mutation_preserves_permutation():
+    candidate = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    original = candidate.copy()
+    rng = np.random.default_rng(202700)
+    algorithm = GeneticAlgorithm(population_size=20)
+    mutated = algorithm._swap_mutation(candidate, rng)
+    assert np.array_equal(np.sort(candidate), np.sort(original))
+    assert np.array_equal(candidate, original)
+    assert np.count_nonzero(mutated != original) == 2
+
+def test_ga_runs_on_tsp():
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=60)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == 60
+    assert len(result.best_history) == 60
+    assert np.isfinite(result.best_fitness)
+    assert result.best_fitness > 0
+
+
+def test_ga_order_crossover_expected_child():
+    parent_a = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+    parent_b = np.array([4, 6, 1, 7, 3, 0, 5, 2])
+
+    rng = Mock()
+    rng.choice.return_value = np.array([2, 5])
+
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    child = algorithm._order_crossover(parent_a, parent_b, rng)
+
+    expected = np.array([7, 0, 2, 3, 4, 5, 6, 1])
+
+    assert np.array_equal(child, expected)
+
+def test_ga_is_reproducible():
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+    ex1 = runner.run(algorithm, problem, seed=202700)
+    ex2 = runner.run(algorithm, problem, seed=202700)
+    assert ex1.evaluations == ex2.evaluations
+    assert ex1.best_fitness == ex2.best_fitness
+    assert ex1.best_history == ex2.best_history
+
+def test_ga_tsp_is_reproducible():
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+    ex1 = runner.run(algorithm, problem, seed=202700)
+    ex2 = runner.run(algorithm, problem, seed=202700)
+    assert ex1.evaluations == ex2.evaluations
+    assert ex1.best_fitness == ex2.best_fitness
+    assert ex1.best_history == ex2.best_history
+
+@pytest.mark.parametrize(
+    "population_size, exception",
+    [
+        (0, ValueError),
+        (2, ValueError),
+        (-5, ValueError),
+        (2.5, TypeError),
+        ("20", TypeError),
+        (True, TypeError),
+    ]
+)
+def test_ga_rejects_invalid_population_size(population_size, exception):
+    with pytest.raises(exception):
+        GeneticAlgorithm(population_size=population_size)
+
+def test_ga_gaussian_mutation_respects_mask():
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    candidate = np.array([0.0, 0.0, 0.0, 0.0])
+    original = candidate.copy()
+
+    rng = Mock()
+    rng.normal.return_value = np.array([1.0, 2.0, 3.0, 4.0])
+    rng.random.return_value = np.array([0.9, 0.1, 0.8, 0.2])
+
+    mutated = algorithm._gaussian_mutation(candidate, problem, rng)
+
+    expected = np.array([0.0, 2.0, 0.0, 4.0])
+
+    assert np.array_equal(mutated, expected)
+    assert np.array_equal(original, candidate)
+
+def test_ga_gaussian_mutation_can_leave_candidate_unchanged():
+    problem = Sphere(4, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+
+    candidate = np.array([1.0, 2.0, 3.0, 4.0])
+    original = candidate.copy()
+
+    rng = Mock()
+    rng.normal.return_value = np.array([0.5, 0.5, 1.0, -1.0])
+    rng.random.return_value = np.array([0.9, 0.8, 0.7, 0.6])
+
+    mutated = algorithm._gaussian_mutation(candidate, problem, rng)
+
+    assert np.array_equal(mutated, candidate)
+    assert np.array_equal(original, candidate)
+
+@pytest.mark.parametrize("budget", [20,21,40])
+def test_ga_handles_partial_generations(budget):
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=budget)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == budget
+    assert len(result.best_history) == budget
+    assert np.isfinite(result.best_fitness)
+
+@pytest.mark.parametrize("budget", [20,21,40])
+def test_ga_tsp_handles_partial_generations(budget):
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=budget)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == budget
+    assert len(result.best_history) == budget
+    assert np.isfinite(result.best_fitness)
+
+def test_ga_rejects_unsupported_problem():
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+
+    with pytest.raises(TypeError):
+        runner.run(algorithm, problem, seed=202700)
