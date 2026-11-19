@@ -10,6 +10,9 @@ __pycache__/
 # Jetbrains
 .idea/
 
+/results/
+
 # DS
 .DS_Store
 Thumbs.db
+
