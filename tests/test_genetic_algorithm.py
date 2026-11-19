@@ -140,3 +140,38 @@ def test_ga_order_crossover_expected_child():
     expected = np.array([7, 0, 2, 3, 4, 5, 6, 1])
 
     assert np.array_equal(child, expected)
+
+def test_ga_is_reproducible():
+    problem = Sphere(10, -5.12, 5.12)
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+    ex1 = runner.run(algorithm, problem, seed=202700)
+    ex2 = runner.run(algorithm, problem, seed=202700)
+    assert ex1.evaluations == ex2.evaluations
+    assert ex1.best_fitness == ex2.best_fitness
+    assert ex1.best_history == ex2.best_history
+
+def test_ga_tsp_is_reproducible():
+    problem = create_tsp_instance()
+    algorithm = GeneticAlgorithm(population_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+    ex1 = runner.run(algorithm, problem, seed=202700)
+    ex2 = runner.run(algorithm, problem, seed=202700)
+    assert ex1.evaluations == ex2.evaluations
+    assert ex1.best_fitness == ex2.best_fitness
+    assert ex1.best_history == ex2.best_history
+
+@pytest.mark.parametrize(
+    "population_size, exception",
+    [
+        (0, ValueError),
+        (2, ValueError),
+        (-5, ValueError),
+        (2.5, TypeError),
+        ("20", TypeError),
+        (True, TypeError),
+    ]
+)
+def test_ga_rejects_invalid_population_size(population_size, exception):
+    with pytest.raises(exception):
+        GeneticAlgorithm(population_size=population_size)

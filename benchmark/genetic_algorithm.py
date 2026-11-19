@@ -4,6 +4,10 @@ from benchmark.tsp import TSP
 
 class GeneticAlgorithm:
     def __init__(self, population_size):
+        if not isinstance(population_size, int) or isinstance(population_size, bool):
+            raise TypeError("population_size must be an integer")
+        if population_size < 3:
+            raise ValueError("population_size must be >= 3")
         self.population_size = population_size
 
     def run(self, problem, evaluator, rng):
