@@ -1,10 +1,14 @@
 import math
+
+import numpy as np
 import pytest
+from scipy._external.cobyqa import problem
 
 from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.sphere import Sphere
 from benchmark.rastrigin import Rastrigin
+from benchmark.tsp import TSP, create_tsp_instance
 from benchmark.evolution_strategy import EvolutionStrategy
 
 def test_es_runs_on_sphere():
@@ -92,3 +96,61 @@ def test_es_is_reproducible():
     assert result1.evaluations == result2.evaluations
     assert result1.best_fitness == result2.best_fitness
     assert result1.best_history == result2.best_history
+
+def test_es_runs_on_tsp():
+    problem = create_tsp_instance()
+    algorithm = EvolutionStrategy(mu=20, offspring_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == 100
+    assert len(result.best_history) == 100
+    assert math.isfinite(result.best_fitness)
+    assert result.best_fitness > 0.0
+
+def test_es_swap_mutation_preserves_permutation():
+    problem = create_tsp_instance()
+    algorithm = EvolutionStrategy(mu=20, offspring_size=20)
+
+    parent = np.arange(20)
+    original = parent.copy()
+
+    rng = np.random.default_rng(seed=202700)
+
+    mutated = algorithm._swap_mutation(parent, rng)
+
+    assert problem.validate(mutated)
+    assert np.count_nonzero(mutated != original) == 2
+    assert np.array_equal(parent, original)
+    assert len(mutated) == len(original)
+
+def test_es_tsp_is_reproducible():
+    problem = create_tsp_instance()
+    algorithm = EvolutionStrategy(mu=20, offspring_size=20)
+    runner = ExperimentRunner(max_evaluations=1000)
+
+    result1 = runner.run(algorithm, problem, seed=202700)
+    result2 = runner.run(algorithm, problem, seed=202700)
+
+    assert result1.evaluations == result2.evaluations
+    assert result1.best_fitness == result2.best_fitness
+    assert result1.best_history == result2.best_history
+
+def test_es_rejects_unsupported_problem():
+    algorithm = EvolutionStrategy(mu=20, offspring_size=20)
+    runner = ExperimentRunner(max_evaluations=100)
+    with pytest.raises(TypeError):
+        runner.run(algorithm, object(), seed=202700)
+
+@pytest.mark.parametrize("budget", [20, 21, 45])
+def test_es_tsp_handles_partial_generations(budget):
+    problem = create_tsp_instance()
+    algorithm = EvolutionStrategy(mu=20, offspring_size=20)
+    runner = ExperimentRunner(max_evaluations=budget)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == budget
+    assert len(result.best_history) == budget
+    assert np.isfinite(result.best_fitness)

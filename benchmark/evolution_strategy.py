@@ -1,5 +1,8 @@
 import numpy as np
 
+from benchmark.tsp import TSP
+from benchmark.continuous_problem import ContinuousProblem
+
 class EvolutionStrategy:
     def __init__(self, mu, offspring_size):
         if not isinstance(mu, int) or isinstance(mu, bool):
@@ -17,6 +20,10 @@ class EvolutionStrategy:
 
 
     def run(self, problem, evaluator, rng):
+
+        if not isinstance(problem, TSP) and not isinstance(problem, ContinuousProblem):
+            raise TypeError("problem must be TSP or ContinuousProblem")
+
         if evaluator.max_evaluations < self.mu:
             raise ValueError("Evaluation budget is smaller than mu")
 
@@ -41,7 +48,11 @@ class EvolutionStrategy:
                 parent_index = rng.integers(len(population))
                 parent = population[parent_index]
 
-                child = self._gaussian_mutation(parent, problem, rng)
+                if isinstance(problem, TSP):
+                    child = self._swap_mutation(parent, rng)
+                else:
+                    child = self._gaussian_mutation(parent, problem, rng)
+
                 fitness = evaluator.evaluate(child)
 
                 offspring.append(child)
@@ -69,3 +80,9 @@ class EvolutionStrategy:
         survivor_fitness = [combined_fitness[i] for i in best_indices]
 
         return survivors, survivor_fitness
+
+    def _swap_mutation(self, parent, rng):
+        mutated = parent.copy()
+        a, b = rng.choice(len(parent), size=2, replace=False)
+        mutated[a], mutated[b] = mutated[b], mutated[a]
+        return mutated
