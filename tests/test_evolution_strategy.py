@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from scipy._external.cobyqa import problem
 
-from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.sphere import Sphere
 from benchmark.rastrigin import Rastrigin
