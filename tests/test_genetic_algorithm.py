@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import pytest
-from scipy._external.cobyqa import problem
 
 from benchmark.genetic_algorithm import GeneticAlgorithm
 from benchmark.experiment_runner import ExperimentRunner
@@ -240,4 +239,4 @@ def test_ga_rejects_unsupported_problem():
     runner = ExperimentRunner(max_evaluations=100)
 
     with pytest.raises(TypeError):
-        runner.run(algorithm, problem, seed=202700)
+        runner.run(algorithm, object(), seed=202700)
