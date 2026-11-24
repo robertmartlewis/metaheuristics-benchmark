@@ -28,17 +28,21 @@ class DifferentialEvolution:
         self.crossover_rate = crossover_rate
 
     def _initialize_population(self, problem, evaluator, rng):
-        if not isinstance(problem, ContinuousProblem):
+        if not isinstance(problem, (ContinuousProblem, TSP)):
             raise TypeError("problem must be ContinuousProblem")
 
         population = []
         fitness_values = []
 
         for _ in range(self.population_size):
-            candidate = problem.random_solution(rng)
-            fitness = evaluator.evaluate(candidate)
+            if isinstance(problem, TSP):
+                candidate = rng.uniform(0.0, 1.0, size=len(problem.cities))
+            else:
+                candidate = problem.random_solution(rng)
+            fitness = self._evaluate_candidate(candidate, problem, evaluator)
             population.append(candidate)
             fitness_values.append(fitness)
+
         return population, fitness_values
 
     def _select_donor_indices(self, target_index, rng):
@@ -65,6 +69,8 @@ class DifferentialEvolution:
         return np.where(mask, mutant, target)
 
     def _repair_bounds(self, trial, problem):
+        if isinstance(problem, TSP):
+            return trial
         return np.clip(trial, problem.lower_bound, problem.upper_bound)
 
     def _select_survivor(self, target, target_fitness, trial, trial_fitness):
@@ -74,8 +80,8 @@ class DifferentialEvolution:
         return target, target_fitness
 
     def run(self, problem, evaluator, rng):
-        if not isinstance(problem, ContinuousProblem):
-            raise TypeError("problem must be ContinuousProblem")
+        if not isinstance(problem, (ContinuousProblem, TSP)):
+            raise TypeError("problem must be ContinuousProblem or TSP")
         if evaluator.max_evaluations < self.population_size:
             raise ValueError("Evaluation budget is smaller than population_size")
         population, fitness_values = self._initialize_population(problem, evaluator, rng)
@@ -98,9 +104,19 @@ class DifferentialEvolution:
             mutant = self._differential_mutation(population, donor_indices)
             trial = self._binomial_crossover(target, mutant, rng)
             repaired_trial = self._repair_bounds(trial, problem)
-            trial_fitness = evaluator.evaluate(repaired_trial)
+            trial_fitness = self._evaluate_candidate(repaired_trial, problem, evaluator)
             survivor, survivor_fitness = self._select_survivor(target, target_fitness, repaired_trial, trial_fitness)
             next_population.append(survivor)
             next_fitness_values.append(survivor_fitness)
 
         return next_population, next_fitness_values
+
+    def _decode_random_keys(self, keys):
+        return np.argsort(keys, kind='stable')
+
+    def _evaluate_candidate(self, candidate, problem, evaluator):
+        if isinstance(problem, TSP):
+            route = self._decode_random_keys(candidate)
+            return evaluator.evaluate(route)
+        return evaluator.evaluate(candidate)
+
