@@ -20,7 +20,8 @@ class ExperimentRunner:
             best_fitness=evaluator.best_fitness,
             evaluations=evaluator.evaluations,
             best_history=tuple(evaluator.best_history),
-            diversity_history=tuple(evaluator.diversity_history)
+            diversity_history=tuple(evaluator.diversity_history),
+            best_candidate=tuple(evaluator.best_candidate)
         )
 
         return result

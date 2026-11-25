@@ -1,3 +1,4 @@
+import copy
 import math
 
 
@@ -15,6 +16,7 @@ class Evaluator:
         self.best_fitness = float("inf")
         self.best_history = []
         self.diversity_history = []
+        self.best_candidate = None
 
     def evaluate(self, candidate):
         if self.evaluations >= self.max_evaluations:
@@ -28,6 +30,7 @@ class Evaluator:
 
         if result < self.best_fitness:
             self.best_fitness = result
+            self.best_candidate = copy.deepcopy(candidate)
 
         self.best_history.append(self.best_fitness)
 

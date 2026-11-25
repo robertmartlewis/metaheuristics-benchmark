@@ -124,3 +124,34 @@ def test_evaluator_records_diversity_without_spending_budget():
     assert evaluator.diversity_history == [(1, 0.75)]
     assert evaluator.evaluations == 1
     assert len(evaluator.best_history) == 1
+
+def test_evaluator_preserves_best_candidate():
+    problem = Sphere(2, -5.0, 5.0)
+    evaluator = Evaluator(problem, max_evaluations=3)
+
+    candidate = np.array([2.0, 1.0])
+    evaluator.evaluate(candidate)
+
+    assert evaluator.best_fitness == 5.0
+
+    candidate[0] = 4.0
+
+    np.testing.assert_array_equal(
+        evaluator.best_candidate,
+        [2.0, 1.0]
+    )
+
+    evaluator.evaluate(np.array([3.0, 1.0]))
+
+    np.testing.assert_array_equal(
+        evaluator.best_candidate,
+        [2.0, 1.0]
+    )
+
+    evaluator.evaluate(np.array([0.0, 1.0]))
+
+    assert evaluator.best_fitness == 1.0
+    np.testing.assert_array_equal(
+        evaluator.best_candidate,
+        [0.0, 1.0]
+    )
