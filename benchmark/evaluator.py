@@ -14,6 +14,7 @@ class Evaluator:
         self.evaluations = 0
         self.best_fitness = float("inf")
         self.best_history = []
+        self.diversity_history = []
 
     def evaluate(self, candidate):
         if self.evaluations >= self.max_evaluations:
@@ -31,3 +32,6 @@ class Evaluator:
         self.best_history.append(self.best_fitness)
 
         return result
+
+    def record_diversity(self, diversity):
+        self.diversity_history.append((self.evaluations, diversity))

@@ -8,6 +8,7 @@ class RunResult:
     best_fitness: float
     evaluations: int
     best_history: tuple[float,...]
+    diversity_history: tuple[tuple[int, float], ...] = ()
 
     def __post_init__(self):
         if self.evaluations <= 0:

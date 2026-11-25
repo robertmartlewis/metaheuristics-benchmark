@@ -1,6 +1,9 @@
+import pytest
+import numpy as np
+
 from benchmark.evaluator import Evaluator
 from benchmark.problem import Problem
-import pytest
+from benchmark.sphere import Sphere
 
 class DummyProblem(Problem):
 
@@ -108,3 +111,16 @@ def test_evaluator_records_final_checkpoint():
     assert evaluator.best_history[99] == 9.0
     assert evaluator.best_history[199] == 4.0
     assert evaluator.best_history[249] == 1.0
+
+def test_evaluator_records_diversity_without_spending_budget():
+    problem = Sphere(2, -5.0, 5.0)
+    evaluator = Evaluator(problem, max_evaluations=10)
+
+    candidate = np.array([1.0, 2.0])
+    evaluator.evaluate(candidate)
+
+    evaluator.record_diversity(0.75)
+
+    assert evaluator.diversity_history == [(1, 0.75)]
+    assert evaluator.evaluations == 1
+    assert len(evaluator.best_history) == 1
