@@ -44,7 +44,7 @@ def main():
 
     for problem_name, problem in problems.items():
         for algorithm_name, algorithm in algorithms.items():
-            for seed in SEEDS[:1]:
+            for seed in SEEDS:
                 print(f"{problem_name} | {algorithm_name} | seed={seed}")
 
                 result = runner.run(
