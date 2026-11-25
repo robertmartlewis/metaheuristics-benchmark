@@ -711,3 +711,74 @@ def test_de_tsp_is_reproducible():
             result1.best_history[1:]
         )
     )
+
+def test_de_records_initial_tsp_diversity():
+    problem = create_tsp_instance()
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+
+    evaluator = Evaluator(problem, max_evaluations=4)
+    rng = np.random.default_rng(202700)
+
+    algorithm.run(problem, evaluator, rng)
+
+    assert evaluator.evaluations == 4
+    assert len(evaluator.best_history) == 4
+    assert len(evaluator.diversity_history) == 1
+
+    evaluation_count, diversity = evaluator.diversity_history[0]
+
+    assert evaluation_count == 4
+    assert 0.0 <= diversity <= 1.0
+
+def test_de_records_tsp_diversity_after_each_generation():
+    problem = create_tsp_instance()
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+
+    evaluator = Evaluator(problem, max_evaluations=10)
+    rng = np.random.default_rng(202700)
+
+    algorithm.run(problem, evaluator, rng)
+
+    assert evaluator.evaluations == 10
+    assert len(evaluator.best_history) == 10
+
+    assert len(evaluator.diversity_history) == 3
+
+    evaluation_counts = [
+        count for count, diversity in evaluator.diversity_history
+    ]
+
+    assert evaluation_counts == [4, 8, 10]
+
+    for count, diversity in evaluator.diversity_history:
+        assert 0.0 <= diversity <= 1.0
+
+def test_de_tsp_runner_returns_diversity_history():
+    problem = create_tsp_instance()
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+    runner = ExperimentRunner(max_evaluations=10)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == 10
+    assert len(result.best_history) == 10
+    assert len(result.diversity_history) == 3
+
+    evaluation_counts = [
+        count for count, diversity in result.diversity_history
+    ]
+
+    assert evaluation_counts == [4, 8, 10]
+
+    for count, diversity in result.diversity_history:
+        assert 0.0 <= diversity <= 1.0
+
+def test_de_continuous_runner_has_empty_diversity_history():
+    problem = Sphere(3, -5.12, 5.12)
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+    runner = ExperimentRunner(max_evaluations=10)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.evaluations == 10
+    assert result.diversity_history == ()

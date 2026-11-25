@@ -4,6 +4,7 @@ import numpy as np
 from benchmark.problem import Problem
 from benchmark.tsp import TSP
 from benchmark.continuous_problem import ContinuousProblem
+from benchmark.diversity import tsp_population_diversity
 
 class DifferentialEvolution:
     def __init__(self, population_size, differential_weight, crossover_rate):
@@ -85,9 +86,11 @@ class DifferentialEvolution:
         if evaluator.max_evaluations < self.population_size:
             raise ValueError("Evaluation budget is smaller than population_size")
         population, fitness_values = self._initialize_population(problem, evaluator, rng)
+        self._record_population_diversity(population, problem, evaluator)
 
         while evaluator.evaluations < evaluator.max_evaluations:
             population, fitness_values = self._evolve_generation(population, fitness_values, problem, evaluator, rng)
+            self._record_population_diversity(population, problem, evaluator)
 
     def _evolve_generation(self, population, fitness_values, problem, evaluator, rng):
         next_population = []
@@ -119,4 +122,14 @@ class DifferentialEvolution:
             route = self._decode_random_keys(candidate)
             return evaluator.evaluate(route)
         return evaluator.evaluate(candidate)
+
+    def _record_population_diversity(self, population, problem, evaluator):
+        if isinstance(problem, ContinuousProblem):
+            return
+        if isinstance(problem, TSP):
+            routes = []
+            for keys in population:
+                routes.append(self._decode_random_keys(keys))
+            diversity = tsp_population_diversity(routes)
+            evaluator.record_diversity(diversity)
 

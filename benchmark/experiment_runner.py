@@ -19,7 +19,8 @@ class ExperimentRunner:
             seed=seed,
             best_fitness=evaluator.best_fitness,
             evaluations=evaluator.evaluations,
-            best_history=tuple(evaluator.best_history)
+            best_history=tuple(evaluator.best_history),
+            diversity_history=tuple(evaluator.diversity_history)
         )
 
         return result
