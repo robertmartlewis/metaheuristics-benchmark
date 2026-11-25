@@ -9,6 +9,7 @@ class RunResult:
     evaluations: int
     best_history: tuple[float,...]
     diversity_history: tuple[tuple[int, float], ...] = ()
+    best_candidate: tuple[int | float, ...] | None = None
 
     def __post_init__(self):
         if self.evaluations <= 0:

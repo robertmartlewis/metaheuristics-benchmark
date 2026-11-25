@@ -4,6 +4,7 @@ import numpy as np
 from benchmark.diversity import tsp_population_diversity
 from benchmark.diversity import tsp_edge_distance
 from benchmark.differential_evolution import DifferentialEvolution
+from benchmark.diversity import continuous_solution_diversity
 
 def test_tsp_edge_distance_equivalent_tours():
     route_a = [0, 1, 2, 3]
@@ -63,3 +64,18 @@ def test_de_tsp_diversity_uses_decoded_routes():
     diversity = tsp_population_diversity(routes)
 
     assert diversity == pytest.approx(1 / 3)
+
+def test_continuous_solution_diversity():
+    solutions = [
+        np.array([0.0, 0.0]),
+        np.array([10.0, 10.0]),
+        np.array([5.0, 5.0])
+    ]
+
+    diversity = continuous_solution_diversity(
+        solutions,
+        lower_bound=0.0,
+        upper_bound=10.0
+    )
+
+    assert diversity == pytest.approx(2 / 3)

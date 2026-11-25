@@ -2,7 +2,6 @@ import math
 
 import numpy as np
 import pytest
-from scipy._external.cobyqa import problem
 
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.sphere import Sphere

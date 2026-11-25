@@ -782,3 +782,29 @@ def test_de_continuous_runner_has_empty_diversity_history():
 
     assert result.evaluations == 10
     assert result.diversity_history == ()
+
+def test_de_tsp_runner_returns_best_candidate():
+    problem = create_tsp_instance()
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+    runner = ExperimentRunner(max_evaluations=100)
+
+    result = runner.run(algorithm, problem, seed=202700)
+
+    assert result.best_candidate is not None
+    assert isinstance(result.best_candidate, tuple)
+    assert problem.validate(result.best_candidate)
+
+    assert problem.evaluate(
+        result.best_candidate
+    ) == pytest.approx(result.best_fitness)
+
+def test_de_tsp_best_candidate_is_reproducible():
+    problem = create_tsp_instance()
+    algorithm = DifferentialEvolution(4, 0.8, 0.9)
+    runner = ExperimentRunner(max_evaluations=100)
+
+    result_a = runner.run(algorithm, problem, seed=202700)
+    result_b = runner.run(algorithm, problem, seed=202700)
+
+    assert result_a.best_candidate == result_b.best_candidate
+    assert result_a == result_b
