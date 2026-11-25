@@ -1,5 +1,7 @@
 import math
 import csv
+import json
+import numpy as np
 from pathlib import Path
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.genetic_algorithm import GeneticAlgorithm
@@ -34,10 +36,11 @@ def main():
         "TSP": create_tsp_instance(),
     }
 
-    runner = ExperimentRunner(max_evaluations=100)
+    runner = ExperimentRunner(max_evaluations=MAX_EVALUATIONS)
 
     total_runs = 0
     records = []
+    history_records = []
 
     for problem_name, problem in problems.items():
         for algorithm_name, algorithm in algorithms.items():
@@ -50,8 +53,20 @@ def main():
                     seed=seed
                 )
 
-                assert result.evaluations == 100
-                assert len(result.best_history) == 100
+                candidate_list = np.asarray(result.best_candidate).tolist()
+
+                for evaluation, fitness in enumerate(result.best_history, start=1):
+                    if(evaluation % 100 == 0):
+                        history_records.append({
+                            "problem": problem_name,
+                            "algorithm": algorithm_name,
+                            "seed": seed,
+                            "evaluation": evaluation,
+                            "best_fitness": float(fitness)
+                        })
+
+                assert result.evaluations == MAX_EVALUATIONS
+                assert len(result.best_history) == MAX_EVALUATIONS
                 assert math.isfinite(result.best_fitness)
                 assert result.best_candidate is not None
 
@@ -72,8 +87,9 @@ def main():
                     "algorithm": algorithm_name,
                     "seed": seed,
                     "best_fitness": result.best_fitness,
-                    "evaluations": result.evaluations,
-                    "convergence_evaluations": convergence_evaluations
+                    "evaluations": int(result.evaluations),
+                    "convergence_evaluations": convergence_evaluations,
+                    "best_candidate": json.dumps(candidate_list)
                 })
 
                 print(
@@ -102,11 +118,29 @@ def main():
                 "seed",
                 "best_fitness",
                 "evaluations",
-                "convergence_evaluations"
+                "convergence_evaluations",
+                "best_candidate"
             ]
         )
         writer.writeheader()
         writer.writerows(records)
+
+    history_file = output_dir / "benchmark_history.csv"
+
+    with history_file.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "problem",
+                "algorithm",
+                "seed",
+                "evaluation",
+                "best_fitness"
+            ]
+        )
+
+        writer.writeheader()
+        writer.writerows(history_records)
 
 if __name__ == "__main__":
     main()
