@@ -29,6 +29,15 @@ def diagnose(name, problem):
         fitness = result.best_history[evaluations - 1]
         print(f"{evaluations:5d} evaluations: {fitness:.8f}")
 
+    if result.diversity_history:
+        diversity_by_evaluations = dict(result.diversity_history)
+
+        print("\nPopulation diversity:")
+
+        for evaluations in [20, 100, 1000, 5000, 10000]:
+            diversity = diversity_by_evaluations[evaluations]
+            print(f"{evaluations:5d} evaluations: {diversity:.8f}")
+
 
 def diagnose_tsp_multiple_seeds():
     problem = create_tsp_instance()
@@ -45,16 +54,30 @@ def diagnose_tsp_multiple_seeds():
 
         runner = ExperimentRunner(max_evaluations=10000)
         result = runner.run(algorithm=algorithm, problem=problem, seed=seed)
+
+        first_zero_diversity = None
+
+        for evaluation_count, diversity in result.diversity_history:
+            if diversity == 0.0:
+                first_zero_diversity = evaluation_count
+                break
+
+        diversity_by_evaluations = dict(result.diversity_history)
         fitness_5000 = result.best_history[5000-1]
         fitness_10000 = result.best_history[10000-1]
+        diversity_5000 = diversity_by_evaluations[5000]
+        diversity_10000 = diversity_by_evaluations[10000]
         improved = fitness_5000 > fitness_10000
         final_fitness_values.append(fitness_10000)
 
         print(
+            f"First zero diversity: {first_zero_diversity} "
             f"Seed {seed}: "
             f"5000={fitness_5000:.4f}, "
             f"10000={fitness_10000:.4f}, "
-            f"Improved={improved}"
+            f"Improved={improved}, "
+            f"diversity 5000={diversity_5000:.4f}, "
+            f"diversity 10000={diversity_10000:.4f}"
         )
 
     print("mean: " + str(statistics.mean(final_fitness_values)))
